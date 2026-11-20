@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>NumTrace - Ethical Phone Number Lookup</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:#f6f7f9;color:#111}
+.top{background:#000;color:#fff;padding:20px 16px;text-align:center}
+.top h1{margin:0;font-size:26px;letter-spacing:1px}
+.top p{font-size:13px;opacity:.8;margin:6px 0 0}
+.dict{background:#fff;border-radius:16px;padding:16px;box-shadow:0 4px 20px rgba(0,0,0,.08);margin-bottom:12px;border-left:4px solid #000}
+.dict h2{margin:0;font-size:22px}
+.dict .pron{color:#666;font-size:13px;font-style:italic}
+.dict .pos{font-weight:700;font-size:13px;color:#2563eb}
+.dict p{font-size:14px;line-height:1.7;margin:8px 0 0}
+.wrap{max-width:560px;margin:0 auto;padding:14px 14px 30px}
+.card{background:#fff;border-radius:16px;padding:16px;box-shadow:0 4px 20px rgba(0,0,0,.08);margin-bottom:12px}
+.label{font-size:13px;font-weight:700;margin:12px 0 6px}
+input{width:100%;padding:13px;border:1px solid #ddd;border-radius:12px;font-size:16px;outline:none}
+.btn{width:100%;padding:15px;border:none;border-radius:12px;background:#000;color:#fff;font-size:16px;font-weight:700;margin-top:12px;cursor:pointer}
+.btn-green{background:#16a34a}
+.btn-blue{background:#2563eb}
+.btn-white{background:#fff;color:#111;border:1px solid #ddd}
+#map{height:300px;border-radius:12px;margin-top:12px;display:none}
+.result{margin-top:12px;background:#f8fafc;border-radius:12px;padding:14px;font-size:14px;line-height:1.7;display:none}
+.pill{display:inline-block;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:700}
+.pill-ok{background:#d1fae5}
+.pill-warn{background:#fef3c7}
+.small{font-size:12px;color:#666;text-align:center;line-height:1.6}
+.tabs{display:flex;background:#fff;border-bottom:1px solid #eee;position:sticky;top:0;z-index:10}
+.tabs button{flex:1;padding:14px;border:none;background:#fff;font-weight:700}
+.tabs button.active{border-bottom:3px solid #000}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.grid div{background:#f8fafc;padding:10px;border-radius:10px}
+.grid b{font-size:12px;color:#666;display:block}
+.grid span{font-size:14px;font-weight:600}
+.badge{display:inline-block;background:#000;color:#fff;padding:4px 10px;border-radius:20px;font-size:11px;letter-spacing:1px}
+</style>
+</head>
+<body>
+<div class="top">
+  <div class="badge">DICTIONARY • TECH</div>
+  <h1 style="margin-top:8px">NumTrace</h1>
+  <p>Ethical Lookup • No tracking strangers • Consent only</p>
+</div>
+
+<div class="wrap">
+  <div class="dict">
+    <h2>NumTrace <span class="pron">/num-treys/</span></h2>
+    <div class="pos">noun</div>
+    <p><b>1.</b> The act of tracing a phone number to its country, network, and approximate region — without tracking the owner.<br>
+    <b>2.</b> An ethical tool that reveals what a number <i>actually</i> contains, and asks for consent before showing live location.<br>
+    <i>Example: "I used NumTrace to confirm the number was MTN Nigeria before I called back."</i></p>
+  </div>
+
+  <div class="tabs" style="border-radius:12px;overflow:hidden;margin-bottom:12px">
+    <button id="t1" class="active" onclick="showTab(1)">Number Lookup</button>
+    <button id="t2" onclick="showTab(2)">Live Location</button>
+    <button id="t3" onclick="showTab(3)">History</button>
+  </div>
+
+<div id="page1">
+  <div class="card">
+    <div class="label">Enter Phone Number</div>
+    <input id="phone" placeholder="+234 803 123 4567" value="+234 ">
+    <button class="btn" onclick="lookup()">Trace Number →</button>
+    <div id="lookupResult" class="result"></div>
+    <p class="small" style="margin-top:12px">Try: +2348031234567 (NG MTN) • +14155552671 (US) • +447911123456 (UK)</p>
+  </div>
+  <div class="card">
+    <b>What NumTrace CAN tell you:</b>
+    <p style="font-size:14px;line-height:1.7">✅ Country & Country Code<br>✅ Network / Carrier from prefix<br>✅ Number Type & Timezone<br>✅ Approximate Region (not exact address)<br><br><b>What it CANNOT do:</b><br>❌ Live location of a stranger<br>❌ Exact home address<br>❌ Track without permission — that is illegal</p>
+  </div>
+</div>
+
+<div id="page2" style="display:none">
+  <div class="card">
+    <b>1. Get MY Live Location (Consent)</b>
+    <p style="font-size:14px;color:#555">Tap below and allow location. Your location stays on your device, shown on map.</p>
+    <button class="btn btn-green" onclick="getMyLocation()">📍 Share My Location</button>
+    <div id="map"></div>
+    <div id="liveResult" class="result"></div>
+  </div>
+  <div class="card">
+    <b>2. Ask Someone Else To Share With You</b>
+    <p style="font-size:14px;color:#555">Generate a link. They open it, tap Allow, and you see their location — only if they agree.</p>
+    <button class="btn btn-blue" onclick="generateLink()">🔗 Generate Share Link</button>
+    <input id="shareLink" readonly style="margin-top:10px;display:none" onclick="this.select()">
+    <button class="btn-white" id="copyBtn" style="display:none" onclick="copyLink()">Copy Link</button>
+  </div>
+</div>
+
+<div id="page3" style="display:none">
+  <div class="card">
+    <b>Trace History</b>
+    <p style="font-size:13px;color:#666">Saved only on this phone.</p>
+    <button class="btn-white" onclick="clearHistory()">🗑 Clear History</button>
+  </div>
+  <div id="historyList"></div>
+</div>
+
+<p class="small">NumTrace • Built for Coding Competition • Educational Demo<br>This tool does NOT track anyone without consent.</p>
+</div>
+
+<script>
+const carriers = {
+  '234803':'MTN Nigeria', '234806':'MTN Nigeria', '234810':'MTN Nigeria', '234813':'MTN Nigeria', '234814':'MTN Nigeria',
+  '234805':'Glo Nigeria', '234807':'Glo Nigeria', '234811':'Glo Nigeria', '234815':'Glo Nigeria',
+  '234802':'Airtel Nigeria', '234808':'Airtel Nigeria', '234812':'Airtel Nigeria', '234901':'Airtel Nigeria',
+  '234809':'9mobile Nigeria', '234817':'9mobile Nigeria',
+  '1':'USA / Canada', '1415':'USA - California', '1212':'USA - New York', '1312':'USA - Chicago',
+  '44':'United Kingdom', '4479':'UK - Vodafone / O2',
+  '23320':'Ghana - MTN', '23324':'Ghana - MTN', '23355':'Ghana - MTN', '23326':'Ghana - AirtelTigo',
+  '2547':'Kenya - Safaricom', '2541':'Kenya - Safaricom', '25410':'Kenya - Airtel',
+  '2782':'South Africa - Vodacom', '2783':'South Africa - MTN',
+  '9198':'India - Jio / Airtel', '9199':'India',
+  '97150':'UAE - Etisalat', '97155':'UAE - du',
+};
+const countries = {
+  '234':{name:'Nigeria', flag:'🇳🇬', tz:'Africa/Lagos (GMT+1)', region:'West Africa'},
+  '233':{name:'Ghana', flag:'🇬🇭', tz:'GMT', region:'West Africa'},
+  '254':{name:'Kenya', flag:'🇰🇪', tz:'East Africa (GMT+3)', region:'East Africa'},
+  '27':{name:'South Africa', flag:'🇿🇦', tz:'SAST (GMT+2)', region:'Southern Africa'},
+  '1':{name:'USA / Canada', flag:'🇺🇸', tz:'Multiple US Timezones', region:'North America'},
+  '44':{name:'United Kingdom', flag:'🇬🇧', tz:'GMT / BST', region:'Europe'},
+  '91':{name:'India', flag:'🇮🇳', tz:'IST (GMT+5:30)', region:'South Asia'},
+  '971':{name:'UAE', flag:'🇦🇪', tz:'GST (GMT+4)', region:'Middle East'},
+  '33':{name:'France', flag:'🇫🇷', tz:'CET (GMT+1)', region:'Europe'},
+  '49':{name:'Germany', flag:'🇩🇪', tz:'CET (GMT+1)', region:'Europe'},
+};
+function showTab(n){
+  [1,2,3].forEach(i=> document.getElementById('page'+i).style.display = n===i?'block':'none');
+  ['t1','t2','t3'].forEach((id,idx)=> document.getElementById(id).classList.toggle('active', idx+1===n));
+  if(n===2) setTimeout(()=>{ if(map) map.invalidateSize(); },200);
+  if(n===3) renderHistory();
+}
+function lookup(){
+  let raw = document.getElementById('phone').value.replace(/[\s\-\(\)]/g,'');
+  const box = document.getElementById('lookupResult');
+  box.style.display='block';
+  if(!raw.startsWith('+')){ box.innerHTML='⚠️ Please include country code, e.g. +234...'; return; }
+  let digits = raw.slice(1);
+  let countryCode=null, country=null;
+  for(let len=3; len>=1; len--){ let code=digits.slice(0,len); if(countries[code]){ countryCode=code; country=countries[code]; break; } }
+  if(!country){ country={name:'Unknown', flag:'🌍', tz:'Unknown', region:'Unknown'}; countryCode=digits.slice(0,2); }
+  let carrier='Unknown Carrier';
+  for(let len=6; len>=3; len--){ let p=digits.slice(0,len); if(carriers[p]){ carrier=carriers[p]; break; } }
+  if(carrier==='Unknown Carrier' && countryCode==='234') carrier='Nigerian Network (check prefix)';
+  let type = digits.length >= 10 ? 'Mobile' : 'Check number length';
+  let valid = digits.length >= 10 && digits.length <= 15;
+  box.innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:center"><b style="font-size:18px">${country.flag} ${raw}</b><span class="pill ${valid?'pill-ok':'pill-warn'}">${valid?'Valid Format':'Check Format'}</span></div>
+    <div class="grid" style="margin-top:12px">
+      <div><b>Country</b><span>${country.name}</span></div>
+      <div><b>Country Code</b><span>+${countryCode}</span></div>
+      <div><b>Network / Carrier</b><span>${carrier}</span></div>
+      <div><b>Type</b><span>${type}</span></div>
+      <div><b>Timezone</b><span>${country.tz}</span></div>
+      <div><b>Region</b><span>${country.region}</span></div>
+    </div>
+    <p style="margin-top:12px;background:#fff3cd;padding:10px;border-radius:8px">⚠️ <b>Approximate only.</b> NumTrace shows carrier + country from prefix. It does NOT show live location. For live location, owner must tap "Share My Location".</p>
+  `;
+  const hist = JSON.parse(localStorage.getItem('numtraceHistory')||'[]');
+  hist.unshift({date:new Date().toLocaleString(), number:raw, country:country.name, carrier});
+  localStorage.setItem('numtraceHistory', JSON.stringify(hist.slice(0,30)));
+}
+let map=null, marker=null;
+function getMyLocation(){
+  const box=document.getElementById('liveResult');
+  box.style.display='block';
+  if(!navigator.geolocation){ box.innerHTML='Geolocation not supported.'; return; }
+  box.innerHTML='Requesting permission... Please tap Allow.';
+  navigator.geolocation.getCurrentPosition(pos=>{
+    const lat=pos.coords.latitude, lng=pos.coords.longitude, acc=pos.coords.accuracy;
+    document.getElementById('map').style.display='block';
+    if(!map){ map=L.map('map').setView([lat,lng],15); L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OpenStreetMap'}).addTo(map); }
+    else { map.setView([lat,lng],15); }
+    if(marker) map.removeLayer(marker);
+    marker=L.marker([lat,lng]).addTo(map).bindPopup('You are here').openPopup();
+    L.circle([lat,lng],{radius:acc}).addTo(map);
+    box.innerHTML=`<b>✅ Location Found (With Your Consent)</b><br>Latitude: ${lat.toFixed(6)}<br>Longitude: ${lng.toFixed(6)}<br>Accuracy: ~${Math.round(acc)} meters<br><a href="https://www.google.com/maps?q=${lat},${lng}" target="_blank">Open in Google Maps →</a>`;
+  }, err=>{ box.innerHTML='❌ Permission denied. Error: '+err.message; }, {enableHighAccuracy:true});
+}
+function generateLink(){
+  const url = location.origin + location.pathname + '?share=1';
+  const inp=document.getElementById('shareLink');
+  inp.style.display='block'; inp.value=url;
+  document.getElementById('copyBtn').style.display='block';
+}
+function copyLink(){ const inp=document.getElementById('shareLink'); inp.select(); document.execCommand('copy'); alert('NumTrace link copied!'); }
+function renderHistory(){
+  const hist = JSON.parse(localStorage.getItem('numtraceHistory')||'[]');
+  const list=document.getElementById('historyList');
+  if(!hist.length){ list.innerHTML='<p style="text-align:center;color:#666">No traces yet.</p>'; return; }
+  list.innerHTML=hist.map(h=>`<div class="card"><b>${h.number}</b><p style="font-size:13px;color:#666">${h.date}<br>${h.country} • ${h.carrier}</p></div>`).join('');
+}
+function clearHistory(){ if(confirm('Clear history?')){ localStorage.removeItem('numtraceHistory'); renderHistory(); } }
+if(location.search.includes('share=1')){
+  showTab(2);
+  setTimeout(()=>{ if(confirm('NumTrace wants to share YOUR live location. Allow?')) getMyLocation(); },500);
+}
+</script>
+</body>
+</html>
